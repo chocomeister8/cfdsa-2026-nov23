@@ -48,7 +48,9 @@ metadata:
   name: bggapp-svc
   namespace: bggns
 spec:
-  type: ClusterIP
+  #type: ClusterIP
+  #type: NodePort
+  type: LoadBalancer
   selector:
     app: bgg-app
   ports:
