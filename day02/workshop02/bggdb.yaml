@@ -1,0 +1,44 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: bggdb-deploy
+  namespace: bggns
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: bgg-db
+  template:
+    metadata:
+      labels:
+        app: bgg-db
+    spec:
+      containers:
+      - name: bggdb-container
+        image: stackupiss/bgg-database:v1
+        imagePullPolicy: IfNotPresent
+        ports:
+        - name: bggdb-port
+          containerPort: 3306
+        resources: {}
+        #env:
+        #- name: MYSQL_ROOT_PASSWORD
+        #  valueFrom:
+        #    secretKeyRef:
+        #      name: bgg-db-password
+        #      key: BGG_DB_PASSWORD
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: bggdb-svc
+  namespace: bggns
+spec:
+  type: ClusterIP
+  # use forward traffic to these pods
+  selector:
+    app: bgg-db
+  ports:
+  - port: 3306
+    targetPort: 3306
