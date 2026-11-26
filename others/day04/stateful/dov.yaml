@@ -1,0 +1,85 @@
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: day04
+
+--- 
+apiVersion: apps/v1 
+kind: Deployment
+metadata:
+  name: api-deploy
+  namespace: day04
+spec:
+  replicas: 3
+  strategy:
+    type: Recreate
+    #type: RollingUpdate
+    # rollingUpdate:
+    #   maxSurge: 20%
+    #   maxUnavailable: 0
+  selector:
+    matchLabels:
+      app: api
+      env: dev
+      version: v1
+  template:
+    metadata:
+      labels:
+        app: api
+        env: dev
+        version: v1
+    spec:
+      containers:
+      - name: dov-container 
+        image: chukmunnlee/dov-bear:v1
+        imagePullPolicy: IfNotPresent
+        env:
+        - name: INSTANCE_NAME
+          valueFrom:
+            fieldRef:
+              fieldPatch: spec.nodeName
+        - name: INSTANCE_HASH
+          valueFrom:
+            fieldRef:
+              fieldPatch:
+        ports:
+        - name: http-port
+          containerPort: 3000 
+        - name: metric-port
+          containerPort: 9464
+        resources: {}
+
+--- 
+apiVersion: v1 
+kind: Service
+metadata:
+  name: dov-svc
+  namespace: day04
+spec:
+  type: ClusterIP
+  #type: NodePort
+  #type: LoadBalancer
+  selector:
+    app: api
+    env: dev
+    version: v1
+  ports:
+  - port: 3000
+    targetPort: http-port
+
+--- 
+apiVersion: v1 
+kind: Service
+metadata:
+  name: dov-hsvc
+  namespace: day04
+spec:
+  clusterIp: None
+  selector:
+    app: api
+    env: dev
+    version: v1
+  ports:
+  - port: 3000
+    targetPort: http-port

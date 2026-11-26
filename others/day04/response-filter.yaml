@@ -1,0 +1,60 @@
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: day04
+
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: api-httproute
+  namespace: day04
+spec:
+  hostnames:
+  - api.172.25.0.4.nip.io
+  parentRefs:
+  - name: default-gtw
+    namespace: default
+  rules:
+  # Rule 1: requests with the header X-API-version: v2 go to api2-svc
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /
+      headers:
+      - name: X-API-version
+        type: Exact
+        value: v2
+    filters:
+    - type: ResponseHeaderModifier
+      responseHeaderModifier:
+        add:
+        - name: Access-Control-Allow-Origin
+          value: "*"
+        remove:
+        - X-Powered-By
+    backendRefs:
+    - name: api2-svc
+      port: 3000
+
+  # Rule 2: everything else is split 3:1 between api-svc and api2-svc
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /
+    filters:
+    - type: ResponseHeaderModifier
+      responseHeaderModifier:
+        add:
+        - name: Access-Control-Allow-Origin
+          value: "*"
+        remove:
+        - X-Powered-By
+    backendRefs:
+    - name: api-svc
+      port: 3000
+      weight: 3
+    - name: api2-svc
+      port: 3000
+      weight: 1
