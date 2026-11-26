@@ -1,0 +1,114 @@
+--- 
+apiVersion: v1 
+kind: Service
+metadata:
+  name: rustfs-hsvc
+  namespace: workshop04
+spec:
+  clusterIP: None
+  publishNotReadyAddresses: true
+  selector:
+    app: rustfs
+  ports:
+  - name: api
+    port: 9000
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: rustfs-svc
+  namespace: workshop04
+spec:
+  type: ClusterIP
+  selector:
+    app: rustfs
+  publishNotReadyAddresses: true
+  ports:
+  - name: api
+    port: 9000
+    targetPort: api
+  - name: console
+    port: 9001
+    targetPort: console
+
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: rustfs-data-route
+  namespace: workshop04
+spec:
+  hostnames:
+  - data.172.25.0.4.nip.io
+  parentRefs:
+  - name: default-gtw
+    namespace: default
+    port: 80
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /
+    backendRefs:
+    - name: rustfs-svc
+      port: 9000
+
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: rustfs-console-route
+  namespace: workshop04
+spec:
+  hostnames:
+  - console.172.25.0.4.nip.io
+  parentRefs:
+  - name: default-gtw
+    namespace: default
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /
+    backendRefs:
+    - name: rustfs-svc
+      port: 9001
+      
+# ---
+# apiVersion: gateway.networking.k8s.io/v1
+# kind: HTTPRoute
+# metadata:
+#   name: rustfs-data-route
+#   namespace: workshop04
+# spec:
+#   hostnames:
+#   - data.172.25.0.4.nip.io
+#   - console.172.25.0.4.nip.io
+#   parentRefs:
+#   - name: default-gtw
+#     namespace: default
+#     port: 80
+#   rules:
+#   - matches:
+#     - path:
+#         type: PathPrefix
+#         value: /
+#       headers:
+#       - name: Host
+#         type: Exact
+#         value: data.172.25.0.4.nip.io
+#     backendRefs:
+#     - name: rustfs-svc
+#       port: 9000
+#   - matches:
+#     - path:
+#         type: PathPrefix
+#         value: /
+#       headers:
+#       - name: Host
+#         type: Exact
+#         value: console.172.25.0.4.nip.io
+#     backendRefs:
+#     - name: rustfs-svc
+#       port: 9001

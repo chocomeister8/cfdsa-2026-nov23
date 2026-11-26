@@ -1,0 +1,54 @@
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: rustfs
+  namespace: workshop04
+spec:
+  serviceName: rustfs-hsvc
+  replicas: 3
+  podManagementPolicy: Parallel
+  selector:
+    matchLabels:
+      app: rustfs
+  template:
+    metadata:
+      labels:
+        app: rustfs
+    spec:
+      securityContext:
+        fsGroup: 10001
+      containers:
+      - name: rustfs
+        image: rustfs/rustfs:latest
+        imagePullPolicy: IfNotPresent
+        ports:
+        - name: api
+          containerPort: 9000
+        - name: console
+          containerPort: 9001
+        envFrom:
+        - configMapRef:
+            name: rustfs-cm
+        - secretRef:
+            name: rustfs-secret
+        resources:
+          requests:
+            cpu: 200m
+            memory: 250Mi
+          limits:
+            cpu: 200m
+            memory: 250Mi
+        volumeMounts:
+        - name: data
+          mountPath: /data
+  volumeClaimTemplates:
+  - metadata:
+      name: data
+    spec:
+      accessModes:
+      - ReadWriteOncePod
+      storageClassName: standard
+      resources:
+        requests:
+          storage: 1Gi
